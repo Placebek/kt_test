@@ -3,8 +3,23 @@
   "use strict";
 
   var DATA = global.QUIZ_DATA || {};
-  var SUBJECT_TITLE = { algo: "Алгоритмы и структуры данных", db: "Базы данных", english: "Английский язык" };
-  var SUBJECT_SHORT = { algo: "Алгоритмы", db: "Базы данных", english: "Английский язык" };
+  var SUBJECT_TITLE = {
+    algo: "Алгоритмы и структуры данных", db: "Базы данных", english: "Английский язык",
+    programming: "Программирование", informatika: "Информатика"
+  };
+  var SUBJECT_SHORT = {
+    algo: "Алгоритмы", db: "Базы данных", english: "Английский язык",
+    programming: "Программирование", informatika: "Информатика"
+  };
+  // Находит все наборы данных варианта v (v{v}-<любой предмет>), а не только
+  // фиксированную тройку algo/db/english — так новые предметы (напр. вариант 8:
+  // programming/informatika) подхватываются без правок этой функции.
+  function subjectsForVariant(v) {
+    var prefix = "v" + v + "-";
+    return Object.keys(DATA)
+      .filter(function (k) { return k.indexOf(prefix) === 0; })
+      .map(function (k) { return { set: DATA[k], subject: k.slice(prefix.length) }; });
+  }
 
   // ---------- Состояние ----------
   var S = {
@@ -122,8 +137,8 @@
 
   function launchScope(variant, subject) {
     if (subject === "both") {
-      var a = DATA["v" + variant + "-algo"], d = DATA["v" + variant + "-db"], e = DATA["v" + variant + "-english"];
-      var qs = [].concat(a ? a.questions : [], d ? d.questions : [], e ? e.questions : []);
+      var qs = [];
+      subjectsForVariant(variant).forEach(function (d) { qs = qs.concat(d.set.questions); });
       startTest("v" + variant + "-both", "Вариант " + variant + " · Комплекс целиком",
         function (q) { return q.subject; }, qs);
     } else {
@@ -208,7 +223,7 @@
   function selectOption(q, letter) {
     if (S.mode === "practice" && S.checked[q.id]) return; // после проверки нельзя менять
     var cur = S.answers[q.id] ? S.answers[q.id].slice() : [];
-    if (q.subject === "db") {
+    if (q.multi) {
       var idx = cur.indexOf(letter);
       if (idx >= 0) cur.splice(idx, 1); else cur.push(letter);
     } else {
@@ -231,7 +246,7 @@
         var isSel = sel.indexOf(b.getAttribute("data-letter")) >= 0;
         b.classList.toggle("selected", isSel);
         var mark = b.querySelector(".option__mark");
-        if (mark) mark.textContent = q.subject === "db" ? (isSel ? "✓" : "") : (isSel ? "●" : "");
+        if (mark) mark.textContent = q.multi ? (isSel ? "✓" : "") : (isSel ? "●" : "");
       });
     }
     var bch = document.getElementById("btnCheck");
@@ -353,16 +368,12 @@
   }
 
   function subjectCard(v) {
-    var defs = [
-      { set: DATA["v" + v + "-algo"], subject: "algo" },
-      { set: DATA["v" + v + "-db"], subject: "db" },
-      { set: DATA["v" + v + "-english"], subject: "english" }
-    ].filter(function (d) { return d.set; });
+    var defs = subjectsForVariant(v);
     function subBtn(d) {
       var set = d.set, subject = d.subject;
       var best = Store.getBest(set.key);
       var count = set.questions.length;
-      var maxScore = count * (subject === "db" ? 2 : 1);
+      var maxScore = set.questions.reduce(function (sum, q) { return sum + Scoring.maxPointsFor(q); }, 0);
       var pct = best ? Math.round(best.got / best.max * 100) : 0;
       var covCls = !best ? "cov--empty" : pct >= 80 ? "cov--high" : pct >= 50 ? "cov--mid" : "cov--low";
       var bestText = best ? ("рекорд " + best.got + "/" + best.max) : "ещё не проходили";
@@ -466,7 +477,7 @@
     var showCheck = isChecked; // раскрыть правильность
 
     var tags = '<span class="tag tag--topic">' + esc(q.topic || SUBJECT_SHORT[q.subject]) + '</span>' +
-      (q.subject === "db" ? '<span class="tag tag--multi">множественный выбор</span>' : '<span class="tag">один ответ</span>') +
+      (q.multi ? '<span class="tag tag--multi">множественный выбор</span>' : '<span class="tag">один ответ</span>') +
       (q.authored ? '<span class="tag tag--authored">🆕 доп.</span>' : "") +
       (q.disputed && isChecked ? '<span class="tag tag--disputed">⚠ спорный ответ</span>' : "");
 
@@ -480,14 +491,14 @@
         else if (isSel && !isCorrect) cls.push("is-wrong");
         else if (!isSel && isCorrect) cls.push("is-missed");
       }
-      var mark = q.subject === "db" ? (isSel ? "✓" : "") : (isSel ? "●" : "");
+      var mark = q.multi ? (isSel ? "✓" : "") : (isSel ? "●" : "");
       return '<button class="' + cls.join(" ") + '" data-letter="' + o.letter + '">' +
         '<span class="option__mark">' + mark + '</span>' +
         '<span class="option__text"><span class="option__letter">' + o.letter + ')</span>' +
         MathFormat.html(o.text) + codeHTML(o.code) + '</span></button>';
     }).join("");
 
-    var hint = q.subject === "db" ? "Выберите один или несколько верных вариантов (не более трёх)." : "Выберите один вариант.";
+    var hint = q.multi ? "Выберите один или несколько верных вариантов (не более трёх)." : "Выберите один вариант.";
     var confidence = '<label class="confidence">Насколько уверены? <select id="confidence"><option value="">— не отмечено —</option><option value="уверен" ' + (S.confidence[q.id] === "уверен" ? "selected" : "") + '>Уверен</option><option value="сомневаюсь" ' + (S.confidence[q.id] === "сомневаюсь" ? "selected" : "") + '>Сомневаюсь</option><option value="наугад" ' + (S.confidence[q.id] === "наугад" ? "selected" : "") + '>Наугад</option></select></label>';
 
     var flagLabel = S.flags[q.id] ? "★ Снять отметку" : "☆ Отметить";
@@ -505,7 +516,7 @@
         '<div class="qtext">' + MathFormat.html(q.question) + '</div>' + codeHTML(q.questionCode) +
         '<div class="qhint">' + hint + '</div>' +
         confidence +
-        '<div class="options options--' + q.subject + (isChecked ? " locked" : "") + '" id="opts">' + opts + '</div>' +
+        '<div class="options options--' + (q.multi ? "multi" : "single") + (isChecked ? " locked" : "") + '" id="opts">' + opts + '</div>' +
         (showCheck ? explainHTML(q) : "") +
         '<div class="qcard__nav">' +
           '<button class="btn btn--ghost" id="btnPrev">← Назад</button>' +

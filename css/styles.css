@@ -374,10 +374,10 @@ body::before {
   display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px;
   font-family: var(--mono); background: var(--bg-inset); transition: .12s ease;
 }
-/* Алгоритмы/английский — одиночный выбор → маркер как radio (круг);
-   базы данных — множественный выбор → маркер как checkbox (квадрат) */
-.options--algo .option__mark, .options--english .option__mark { border-radius: 50%; }
-.options--db .option__mark { border-radius: 5px; }
+/* Одиночный выбор (q.multi=false) → маркер как radio (круг);
+   множественный выбор (q.multi=true) → маркер как checkbox (квадрат) */
+.options--single .option__mark { border-radius: 50%; }
+.options--multi .option__mark { border-radius: 5px; }
 .option.selected .option__mark { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
 .option__letter { font-family: var(--mono); font-weight: 700; margin-right: 5px; color: var(--text-dim); }
 .option__text { flex: 1; padding-top: 1px; }
