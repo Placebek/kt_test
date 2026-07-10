@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Тренажёр · Алгоритмы и Базы данных</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Верхняя панель -->
+    <header class="topbar">
+      <div class="topbar__left">
+        <button class="brand" id="btnHome" title="На главную">
+          <span class="brand__logo">{ }</span>
+          <span class="brand__name">Тренажёр <small>магистратура</small></span>
+        </button>
+      </div>
+      <div class="topbar__right">
+        <div id="timer" class="timer hidden" aria-live="polite"></div>
+        <button class="icon-btn" id="btnTheme" title="Тёмная/светлая тема">🌙</button>
+      </div>
+    </header>
+
+    <main id="screen" class="screen"><!-- рендерится из JS --></main>
+
+    <footer class="footer">
+      <span>Локальный тренажёр · данные хранятся только в вашем браузере</span>
+    </footer>
+  </div>
+
+  <!-- Модальное окно (объяснение ИИ, настройки и т.п.) -->
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal__backdrop" data-close></div>
+    <div class="modal__box">
+      <button class="modal__close" data-close title="Закрыть">✕</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- Данные тестов (глобальный window.QUIZ_DATA) -->
+  <script src="data/v1-algo.js"></script>
+  <script src="data/v1-db.js"></script>
+  <script src="data/v2-algo.js"></script>
+  <script src="data/v2-db.js"></script>
+  <script src="data/v3-algo.js"></script>
+  <script src="data/v3-db.js"></script>
+  <script src="data/v4-algo.js"></script>
+  <script src="data/v4-db.js"></script>
+  <script src="data/v5-algo.js"></script>
+  <script src="data/v5-db.js"></script>
+  <script src="data/v5-english.js"></script>
+  <script src="data/v6-algo.js"></script>
+  <script src="data/v6-db.js"></script>
+  <script src="data/v7-algo.js"></script>
+  <script src="data/v7-db.js"></script>
+
+  <!-- Логика -->
+  <script src="js/scoring.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
