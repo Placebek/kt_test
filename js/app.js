@@ -5,11 +5,15 @@
   var DATA = global.QUIZ_DATA || {};
   var SUBJECT_TITLE = {
     algo: "Алгоритмы и структуры данных", db: "Базы данных", english: "Английский язык",
-    programming: "Программирование", informatika: "Информатика"
+    programming: "Программирование", informatika: "Информатика (методика оқыту)",
+    fundamentals: "Тест на готовность к обучению",
+    itbasics: "ИТ-тест (сети, БД, Excel, Python, логика)"
   };
   var SUBJECT_SHORT = {
     algo: "Алгоритмы", db: "Базы данных", english: "Английский язык",
-    programming: "Программирование", informatika: "Информатика"
+    programming: "Программирование", informatika: "Информатика",
+    fundamentals: "Готовность к обучению",
+    itbasics: "ИТ-тест"
   };
   // Находит все наборы данных варианта v (v{v}-<любой предмет>), а не только
   // фиксированную тройку algo/db/english — так новые предметы (напр. вариант 8:
@@ -19,6 +23,18 @@
     return Object.keys(DATA)
       .filter(function (k) { return k.indexOf(prefix) === 0; })
       .map(function (k) { return { set: DATA[k], subject: k.slice(prefix.length) }; });
+  }
+  // Все предметы, встречающиеся хоть в одном варианте, со списком наборов данных
+  // (по одному на вариант, где этот предмет есть) — нужно для конструктора экзамена.
+  function allSubjectsInfo() {
+    var m = {};
+    Object.keys(DATA).forEach(function (k) {
+      var set = DATA[k];
+      (m[set.subject] = m[set.subject] || []).push(set);
+    });
+    return Object.keys(m).sort().map(function (subject) {
+      return { subject: subject, sets: m[subject].sort(function (a, b) { return a.variant - b.variant; }) };
+    });
   }
 
   // ---------- Состояние ----------
@@ -157,6 +173,25 @@
   function launchTopic(topic) {
     var qs = allQuestions().filter(function (q) { return q.topic === topic && !q.missing; });
     startTest("topic:" + topic, "Тема: " + topic, function (q) { return q.subject; }, qs);
+  }
+  // Сдача экзамена: для каждого выбранного предмета независимо (без привязки
+  // к номеру варианта у других предметов) берём случайный вариант этого предмета.
+  function launchExam(subjects) {
+    if (!subjects.length) { alert("Выберите хотя бы один предмет."); return; }
+    var info = {}; allSubjectsInfo().forEach(function (d) { info[d.subject] = d.sets; });
+    var qs = [], picked = [];
+    subjects.forEach(function (subject) {
+      var sets = info[subject];
+      if (!sets || !sets.length) return;
+      var set = sets[Math.floor(Math.random() * sets.length)];
+      picked.push((SUBJECT_SHORT[subject] || subject) + " (вариант " + set.variant + ")");
+      qs = qs.concat(set.questions);
+    });
+    if (!qs.length) { alert("Нет вопросов для выбранных предметов."); return; }
+    S.mode = "exam";
+    startTest("exam:" + subjects.slice().sort().join(",") + ":" + Date.now(),
+      "Экзамен · " + picked.join(" · "),
+      function (q) { return q.subject; }, qs);
   }
   function launchAdaptive(kind) {
     var all = allQuestions().filter(function (q) { return !q.missing; });
@@ -327,6 +362,13 @@
         '<span class="card__meta" style="margin-left:auto">' + (S.mode === "practice" ? "Проверка и объяснение после каждого вопроса" : "Таймер, разбор в конце") + '</span>' +
       '</div>' +
 
+      '<div class="section-title">Экзамен</div>' +
+      '<div class="cards">' +
+        '<div class="card"><div class="card__title">📝 Сдать экзамен</div>' +
+        '<div class="card__meta">Выберите предметы — для каждого случайно возьмётся один из вариантов, независимо от того, какой вариант выпал остальным предметам.</div>' +
+        '<div class="card__subjects"><button class="btn btn--primary" id="btnExam">Настроить и начать</button></div></div>' +
+      '</div>' +
+
       '<div class="section-title">Варианты</div>' +
       '<div class="cards">' + cards + '</div>' +
 
@@ -358,6 +400,7 @@
         launchScope(p[0], p[1]);
       });
     });
+    document.getElementById("btnExam").addEventListener("click", openExamModal);
     var bm = document.getElementById("btnMistakes"); if (bm) bm.addEventListener("click", launchMistakes);
     document.getElementById("btnAdaptive").addEventListener("click", function () { launchAdaptive("weak"); });
     var bd = document.getElementById("btnDue"); if (bd) bd.addEventListener("click", function () { launchAdaptive("due"); });
@@ -743,6 +786,34 @@
   modal.querySelectorAll("[data-close]").forEach(function (el) { el.addEventListener("click", closeModal); });
   function openModal(html) { modalBody.innerHTML = html; modal.classList.remove("hidden"); }
   function closeModal() { modal.classList.add("hidden"); }
+  function openExamModal() {
+    var subjects = allSubjectsInfo();
+    var rows = subjects.map(function (d) {
+      var qCounts = d.sets.map(function (s) { return s.questions.length; });
+      var qRange = Math.min.apply(null, qCounts) === Math.max.apply(null, qCounts)
+        ? String(qCounts[0]) : Math.min.apply(null, qCounts) + "–" + Math.max.apply(null, qCounts);
+      return '<label class="toggle" style="display:flex;align-items:center;gap:8px;padding:6px 0">' +
+        '<input type="checkbox" class="examSubj" value="' + esc(d.subject) + '" checked> ' +
+        '<span>' + esc(SUBJECT_SHORT[d.subject] || d.subject) + '</span>' +
+        '<span class="card__meta" style="margin-left:auto">' + d.sets.length + ' вариант(ов) · ' + qRange + ' вопр.</span>' +
+        '</label>';
+    }).join("");
+    openModal(
+      '<h3>📝 Сдать экзамен</h3>' +
+      '<p class="hint">Выберите предметы. Для каждого выбранного предмета случайно возьмётся один из его вариантов —' +
+      ' независимо от того, какие варианты выпали остальным предметам. Экзамен идёт с таймером и разбором в конце.</p>' +
+      '<div id="examSubjectsList">' + rows + '</div>' +
+      '<div style="margin-top:14px;display:flex;gap:10px"><button class="btn btn--primary" id="examStart">Начать экзамен</button><button class="btn btn--ghost" data-close>Отмена</button></div>'
+    );
+    modalBody.querySelector("[data-close]").addEventListener("click", closeModal);
+    document.getElementById("examStart").addEventListener("click", function () {
+      var chosen = Array.prototype.slice.call(modalBody.querySelectorAll(".examSubj:checked"))
+        .map(function (c) { return c.value; });
+      if (!chosen.length) { alert("Выберите хотя бы один предмет."); return; }
+      closeModal();
+      launchExam(chosen);
+    });
+  }
   function openAIKeyModal() {
     openModal(
       '<h3>🤖 Подключить ИИ (по желанию)</h3>' +
