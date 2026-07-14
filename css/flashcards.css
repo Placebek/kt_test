@@ -1,0 +1,63 @@
+/* Стили страницы карточек — используют переменные из css/styles.css,
+   поэтому подхватывают ту же светлую/тёмную тему и визуальный язык. */
+
+.deck-stats {
+  display: flex; gap: 18px; align-items: center; flex-wrap: wrap;
+  margin: 4px 0 16px;
+}
+.deck-stats__item { font-family: var(--mono); font-size: 13px; color: var(--text-soft); white-space: nowrap; }
+.deck-stats__item b { color: var(--text); }
+.deck-stats__item.know b { color: var(--green); }
+.deck-stats__item.unknown b { color: var(--red); }
+.deck-progress { flex: 1; min-width: 140px; height: 8px; border-radius: 5px; background: var(--bg-soft); overflow: hidden; }
+.deck-progress__fill { height: 100%; background: var(--green); transition: width .25s ease; }
+
+.flashcard-stage { display: flex; flex-direction: column; align-items: center; gap: 16px; margin: 6px 0 26px; }
+.flashcard {
+  width: 100%; max-width: 580px; height: 300px; perspective: 1400px; cursor: pointer;
+}
+.flashcard__inner {
+  position: relative; width: 100%; height: 100%; transform-style: preserve-3d;
+  transition: transform .55s cubic-bezier(.2, .7, .3, 1);
+  will-change: transform;
+}
+.flashcard.flipped .flashcard__inner { transform: rotateY(180deg); }
+.flashcard:hover .flashcard__face { box-shadow: var(--shadow-lift); border-color: var(--primary); }
+.flashcard:active .flashcard__inner { transform: scale(.98); }
+.flashcard.flipped:active .flashcard__inner { transform: rotateY(180deg) scale(.98); }
+.flashcard__face {
+  position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg-elev-solid);
+  box-shadow: var(--shadow-sm); padding: 28px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center; gap: 14px;
+  transition: box-shadow .2s ease, border-color .2s ease;
+}
+.flashcard__face--front { border-left: 3px solid var(--teal); }
+.flashcard__face--back { transform: rotateY(180deg); border-left: 3px solid var(--primary); }
+.flashcard__label {
+  font-family: var(--mono); font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--text-dim);
+}
+.flashcard__text { font-size: 19px; font-weight: 700; line-height: 1.42; max-width: 460px; }
+.flashcard__face--back .flashcard__text { font-size: 16.5px; font-weight: 600; }
+.flashcard__hint { font-family: var(--mono); font-size: 12px; color: var(--text-dim); margin-top: auto; }
+.flashcard__status { position: absolute; top: 14px; right: 16px; font-size: 16px; }
+
+.flashcard-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
+.flashcard-judge { display: flex; gap: 10px; }
+.btn--know { color: var(--green); border-color: var(--green-soft); }
+.btn--know:hover { background: var(--green-soft); border-color: var(--green); }
+.btn--dontknow { color: var(--red); border-color: var(--red-soft); }
+.btn--dontknow:hover { background: var(--red-soft); border-color: var(--red); }
+
+.fc-topic-chip {
+  font-family: var(--mono); font-size: 10.5px; padding: 3px 9px; border-radius: 5px; font-weight: 700;
+  background: var(--teal-soft); color: var(--teal); border: 1px solid transparent;
+}
+
+.empty-deck { text-align: center; color: var(--text-soft); padding: 50px 10px; font-family: var(--mono); }
+
+@media (max-width: 560px) {
+  .flashcard { height: 340px; }
+  .flashcard__face { padding: 20px; }
+}

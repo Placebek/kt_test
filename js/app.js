@@ -53,7 +53,8 @@
     startedAt: 0,
     timerId: null,
     remaining: 0,               // сек (экзамен)
-    reviewFilter: "all"
+    reviewFilter: "all",
+    subjectFilter: null         // null = ещё не инициализирован (см. renderHome)
   };
 
   var elScreen = document.getElementById("screen");
@@ -325,14 +326,29 @@
       elScreen.innerHTML = '<div class="empty">Файлы с вопросами (data/*.js) не найдены или пусты.</div>';
       return;
     }
+    var subjectsInfo = allSubjectsInfo();
+    var allSubjectKeys = subjectsInfo.map(function (d) { return d.subject; });
+    if (!S.subjectFilter) {
+      var def = allSubjectKeys.filter(function (s) { return s === "algo" || s === "db"; });
+      S.subjectFilter = def.length ? def : allSubjectKeys.slice();
+    }
     var variants = [];
     Object.keys(DATA).forEach(function (k) {
       var m = k.match(/^v(\d+)-/);
       if (m && variants.indexOf(+m[1]) < 0) variants.push(+m[1]);
     });
     variants.sort(function (a, b) { return a - b; });
+    variants = variants.filter(function (v) {
+      return subjectsForVariant(v).some(function (d) { return S.subjectFilter.indexOf(d.subject) >= 0; });
+    });
     var cards = variants.map(function (v) {
       return subjectCard(v);
+    }).join("");
+    var subjectFilterHTML = subjectsInfo.map(function (d) {
+      var checked = S.subjectFilter.indexOf(d.subject) >= 0;
+      return '<label class="toggle"><input type="checkbox" class="subjFilterBox" value="' + esc(d.subject) + '" ' +
+        (checked ? "checked" : "") + '> ' + esc(SUBJECT_SHORT[d.subject] || d.subject) +
+        ' <span class="card__meta">(' + d.sets.length + ')</span></label>';
     }).join("");
 
     var topics = topicsList();
@@ -369,11 +385,21 @@
         '<div class="card__subjects"><button class="btn btn--primary" id="btnExam">Настроить и начать</button></div></div>' +
       '</div>' +
 
-      '<div class="section-title">Варианты</div>' +
-      '<div class="cards">' + cards + '</div>' +
+      '<div class="section-title">Варианты' +
+        '<span class="card__meta" style="font-weight:normal;margin-left:10px">Показано: ' + variants.length + '</span>' +
+      '</div>' +
+      '<div class="controlbar" id="subjFilterBar">' +
+        '<span class="field-label">Предметы:</span>' + subjectFilterHTML +
+        '<button class="btn btn--ghost" id="btnFilterAll" style="margin-left:auto">Показать все</button>' +
+        '<button class="btn btn--ghost" id="btnFilterDefault">Только алгоритмы/БД</button>' +
+      '</div>' +
+      '<div class="cards">' + (cards || '<div class="card__meta">Под выбранные предметы вариантов не найдено.</div>') + '</div>' +
 
       '<div class="section-title">Дополнительно</div>' +
       '<div class="cards">' +
+        '<div class="card"><div class="card__title">🗂️ Карточки для запоминания</div>' +
+          '<div class="card__meta">Короткие факты по алгоритмам и базам данных — переворачивайте, оценивайте себя.</div>' +
+          '<div class="card__subjects"><a class="btn btn--primary" href="flashcards.html">Открыть карточки</a></div></div>' +
         '<div class="card"><div class="card__title">🧠 Персональная практика</div><div class="card__meta">Слабые темы и вопросы, которые пора повторить.</div><div class="card__subjects"><button class="btn btn--primary" id="btnAdaptive">Собрать до 20 вопросов</button><button class="btn btn--ghost" id="btnDue" ' + (dueCount ? '' : 'disabled') + '>🔁 Повторить: ' + dueCount + '</button></div></div>' +
         '<div class="card"><div class="card__title">🔁 Работа над ошибками</div>' +
           '<div class="card__meta">Прорешать заново вопросы, где вы ошибались. В списке: <b>' + wrongCount + '</b>.</div>' +
@@ -394,6 +420,23 @@
     });
     document.getElementById("shQ").addEventListener("change", function (e) { S.shuffleQ = e.target.checked; });
     document.getElementById("shO").addEventListener("change", function (e) { S.shuffleOpts = e.target.checked; });
+    elScreen.querySelectorAll(".subjFilterBox").forEach(function (box) {
+      box.addEventListener("change", function () {
+        var v = box.value;
+        var idx = S.subjectFilter.indexOf(v);
+        if (box.checked && idx < 0) S.subjectFilter.push(v);
+        else if (!box.checked && idx >= 0) S.subjectFilter.splice(idx, 1);
+        renderHome();
+      });
+    });
+    document.getElementById("btnFilterAll").addEventListener("click", function () {
+      S.subjectFilter = allSubjectKeys.slice(); renderHome();
+    });
+    document.getElementById("btnFilterDefault").addEventListener("click", function () {
+      var def = allSubjectKeys.filter(function (s) { return s === "algo" || s === "db"; });
+      S.subjectFilter = def.length ? def : allSubjectKeys.slice();
+      renderHome();
+    });
     elScreen.querySelectorAll("[data-launch]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var p = btn.getAttribute("data-launch").split(":");
@@ -411,7 +454,8 @@
   }
 
   function subjectCard(v) {
-    var defs = subjectsForVariant(v);
+    var allDefs = subjectsForVariant(v);
+    var defs = allDefs.filter(function (d) { return S.subjectFilter.indexOf(d.subject) >= 0; });
     function subBtn(d) {
       var set = d.set, subject = d.subject;
       var best = Store.getBest(set.key);

@@ -18,6 +18,7 @@
   state.wrongIds = state.wrongIds || {};    // qid -> true (для «работы над ошибками»)
   state.settings = state.settings || {};   // тема, apiKey и т.п.
   state.learning = state.learning || {};   // qid -> история и интервальное повторение
+  state.cards = state.cards || {};         // id карточки -> "know" | "unknown"
 
   var API = {
     get settings() { return state.settings; },
@@ -52,6 +53,10 @@
       x.dueAt = Date.now() + hours * 3600000; state.learning[q.id] = x; saveAll(state);
     },
     getDueIds: function () { var now = Date.now(); return Object.keys(state.learning).filter(function (id) { return state.learning[id].dueAt <= now; }); },
+
+    getCardStatus: function (id) { return state.cards[id] || null; },
+    setCardStatus: function (id, status) { state.cards[id] = status; saveAll(state); },
+    clearCardStatuses: function (ids) { (ids || []).forEach(function (id) { delete state.cards[id]; }); saveAll(state); },
     updateLearningMeta: function (qid, confidence, reason) { if (state.learning[qid]) { if (confidence) state.learning[qid].confidence = confidence; if (reason) state.learning[qid].reason = reason; saveAll(state); } },
     getTopicStats: function (questions) {
       var out = {};

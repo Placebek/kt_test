@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Карточки для запоминания · Тренажёр</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/flashcards.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Верхняя панель -->
+    <header class="topbar">
+      <div class="topbar__left">
+        <a class="brand" href="index.html" title="На главную (тесты)">
+          <span class="brand__logo">{ }</span>
+          <span class="brand__name">Тренажёр <small>карточки</small></span>
+        </a>
+      </div>
+      <div class="topbar__right">
+        <button class="icon-btn" id="btnTheme" title="Тёмная/светлая тема">🌙</button>
+      </div>
+    </header>
+
+    <main id="screen" class="screen"><!-- рендерится из JS --></main>
+
+    <footer class="footer">
+      <span>Локальный тренажёр · данные хранятся только в вашем браузере</span>
+    </footer>
+  </div>
+
+  <!-- Данные карточек (глобальный window.FLASHCARDS) -->
+  <script src="data/flashcards-algo.js"></script>
+  <script src="data/flashcards-db.js"></script>
+  <script src="data/flashcards-programming.js"></script>
+  <script src="data/flashcards-informatika.js"></script>
+
+  <!-- Логика -->
+  <script src="js/storage.js"></script>
+  <script src="js/flashcards.js"></script>
+</body>
+</html>
